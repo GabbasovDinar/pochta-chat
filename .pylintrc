@@ -1,0 +1,45 @@
+[MASTER]
+# Load the TortoiseORM PyLint plugin to better understand ORM models
+load-plugins=tortoise.contrib.pylint
+
+# Disable specific PyLint warnings that are either unnecessary or handled by Ruff
+disable=
+    E0401,  # Ignore import problems
+    C0114,  # Missing module docstring
+    C0115,  # Missing class docstring
+    C0116,  # Missing function/method docstring
+    R0903,  # Too few public methods (Handled by Ruff's PLR0903)
+    W0611,  # Unused imports (Ruff already checks this)
+    W0613,  # Unused argument (Handled by Ruff)
+    W0511,  # TODO comments warning (Ruff handles this)
+    W1203,  # Using `logging` with % instead of .format()
+    R0913,  # Too many arguments in function (Handled by Ruff)
+    R0914,  # Too many local variables in function
+    R0915,  # Too many statements in function
+
+max-line-length=100  # Match with Ruff and Black
+good-names=i,j,k,db,id,pk  # Allow short variable names commonly used in databases
+
+[FORMAT]
+indent-string='    '
+
+[MESSAGES CONTROL]
+# Enable extra warnings for better code quality
+enable=
+    useless-suppression,  # Warn about unnecessary `# noqa`
+    too-many-ancestors,  # Warn if a class has too many parent classes
+    inconsistent-return-statements  # Ensure all function paths return a value
+
+[DESIGN]
+max-args=6  # Allow up to 6 function arguments (Ruff handles this with C901)
+max-locals=15  # Allow up to 15 local variables in a function
+max-branches=12  # Allow up to 12 branches in a function
+max-statements=50  # Allow up to 50 statements in a function
+max-parents=7  # Limit the number of parent classes in inheritance
+max-attributes=10  # Maximum attributes per class
+
+[TYPECHECK]
+generated-members=tortoise.fields.*  # Allow generated ORM fields without complaints
+
+[IMPORTS]
+known-third-party=fastapi,pydantic,starlette,tortoise

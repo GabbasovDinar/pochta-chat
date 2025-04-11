@@ -1,0 +1,53 @@
+# Set the target Python version for Ruff (Python 3.11)
+target-version = 'py311'
+
+# Define the maximum allowed line length (consistent with Black)
+line-length = 100
+
+# Exclude specific directories from linting (e.g., database migrations and test files)
+exclude = ["migrations/", "tests/"]
+
+[format]
+# Enable preview formatting rules (experimental improvements in Ruff's formatter)
+preview = true
+
+[lint]
+extend-select = [
+    "E",  # pycodestyle errors (general Python style violations)
+    "W",  # pycodestyle warnings (potential issues that may lead to bugs)
+    "F",  # pyflakes (detects undefined names, unused variables, etc.)
+    "I",  # isort (ensures consistent import sorting)
+    "B",  # flake8-bugbear (detects common Python pitfalls and best practices)
+    "C4",  # flake8-comprehensions (optimizes list/set/dict comprehensions)
+    "UP",  # pyupgrade (automatically modernizes Python code)
+    "C90",  # Code style (e.g., C901 - too complex functions)
+    "FAST",  # FastAPI-specific rules (checks for redundant response models, dependencies, etc.)
+    "PLW",  # Logical checks (e.g., enforcing `is None` instead of `== None`)
+    "RUF100", # Ruff-specific rules for improving code quality
+    "D", # Enable docstring checks
+]
+
+ignore = [
+    "D100",  # Ignore missing docstrings in modules
+    "D104",  # Ignore missing docstrings in __init__.py files
+    "N806",  # Ignore variable naming style (handled by PyLint)
+    "N802",  # Ignore function naming style (handled by PyLint)
+    "PLW0129",  # Ignore "Use `is None` instead of `== None`"
+    "B018",  # Ignore async context manager checks (TortoiseORM uses them)
+    "B008",  # Do not perform function calls in argument defaults
+]
+
+# Allow auto-fixing for specific rules
+extend-fixable = ["FAST002"]
+
+[lint.isort]
+# Define known third-party libraries to ensure correct import sorting
+known-third-party = ["fastapi", "pydantic", "starlette", "tortoise"]
+
+[lint.mccabe]
+# Set the maximum allowed cyclomatic complexity (16 is a balanced threshold)
+max-complexity = 16
+
+[lint.pyupgrade]
+# Preserve runtime type annotations even if `from __future__ import annotations` is used
+keep-runtime-typing = true
