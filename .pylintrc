@@ -16,6 +16,7 @@ disable=
     R0913,  # Too many arguments in function (Handled by Ruff)
     R0914,  # Too many local variables in function
     R0915,  # Too many statements in function
+    W0719,  # Raising too general exception
 
 max-line-length=100  # Match with Ruff and Black
 good-names=i,j,k,db,id,pk  # Allow short variable names commonly used in databases
