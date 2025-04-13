@@ -4,7 +4,7 @@ from tortoise import fields, models
 
 
 class Base(models.Model):
-    """Base model."""
+    """Abstract base model with timestamp fields and uuid primary key."""
 
     id = fields.UUIDField(primary_key=True, default=uuid4)
     created_at = fields.DatetimeField(auto_now_add=True)

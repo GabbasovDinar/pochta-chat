@@ -1,6 +1,7 @@
-from app.models import Chat, ChatMembership, Message, User
 from pydantic import BaseModel, Field
 from tortoise.contrib.pydantic import pydantic_model_creator
+
+from app.models import Chat, ChatMembership, Message, User
 
 
 class Login(BaseModel):

@@ -21,6 +21,7 @@ class Message(Base):
     uuid = fields.UUIDField(unique=True, default=uuid4)
     content = fields.TextField()
     status = fields.CharEnumField(MessageStatus, max_length=20, default=MessageStatus.SENDING)
+    read_time = fields.DatetimeField(null=True)
 
     chat = fields.ForeignKeyField("models.Chat", related_name="messages", on_delete=fields.CASCADE)
     user = fields.ForeignKeyField(
