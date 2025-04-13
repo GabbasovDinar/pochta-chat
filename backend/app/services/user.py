@@ -1,8 +1,8 @@
 from app.models import User
+from app.repositories.user import user_repository
 from app.utils.jwt import jwt_token
 from app.utils.security import security
 
-from ..repositories.user import user_repository
 from .base_service import Base
 
 
@@ -39,11 +39,9 @@ class UserService(Base):
         """Login a user."""
         user = await self.authenticate(email, password)
         if not user:
-            raise Exception("Invalid email or password")
+            raise Exception("Incorrect username or password")
 
-        token = jwt_token.generate({"sub": str(user.id)})
-
-        return token
+        return jwt_token.generate({"sub": str(user.id)})
 
 
 user_service = UserService(repository=user_repository)

@@ -6,7 +6,7 @@ from .base import Base
 
 
 class User(Base):
-    """User model."""
+    """User model with hashed password for authentication."""
 
     name = fields.CharField(max_length=255)
     email = fields.CharField(max_length=255, unique=True)

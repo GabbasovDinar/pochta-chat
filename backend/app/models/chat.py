@@ -15,7 +15,7 @@ class ChatType(str, Enum):
 
 
 class Chat(Base):
-    """Chat model representing a private or group chat."""
+    """Chat channel (either private or group chat)."""
 
     name = fields.CharField(max_length=255, null=True)
     chat_type = fields.CharEnumField(ChatType, default=ChatType.GROUP)
