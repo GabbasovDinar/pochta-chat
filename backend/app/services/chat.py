@@ -1,3 +1,4 @@
+from app.models import Message, MessageStatus
 from app.repositories.chat import chat_repository
 from app.repositories.message import message_repository
 from app.repositories.user import user_repository
@@ -49,13 +50,27 @@ class ChatService(Base):
 
         return True
 
-    async def get_members(self, chat_id: str) -> list:
+    async def send_message(self, user_id: str, chat_id: str, content: str) -> Message:
+        """Send a message."""
+        user = await user_repository.get_by_id(user_id)
+        chat = await self.get_by_id(chat_id)
+        if not chat:
+            raise Exception("Chat not found")
+
+        if not user.chats.filter(id=chat_id).exists():
+            raise Exception("You are not a member of the chat")
+
+        return await message_repository.create(
+            chat_id=chat_id, user_id=user_id, content=content, status=MessageStatus.SENT
+        )
+
+    async def get_member_ids(self, chat_id: str) -> list:
         """Get members of a chat."""
         chat = await self.get_by_id(chat_id)
         if not chat:
             raise Exception("Chat not found")
 
-        return [membership.user for membership in chat.memberships]
+        return [str(membership.user_id) for membership in chat.memberships]
 
     async def get_history(self, chat_id: str, user_id: str, limit: int = 50, offset: int = 0):
         """Get history of a chat."""

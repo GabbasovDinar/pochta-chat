@@ -1,27 +1,13 @@
 from datetime import datetime
 
-from app.models import Message
 from app.models.message import MessageStatus
 from app.repositories.message import message_repository
-from app.repositories.user import user_repository
 
 from .base_service import Base
 
 
 class MessageService(Base):
     """Service for Message model operations."""
-
-    async def send(self, user_id: str, chat_id: str, content: str) -> Message:
-        """Send a message."""
-        user = await user_repository.get_by_id(user_id)
-        chat = await self.get_by_id(chat_id)
-        if not chat:
-            raise Exception("Chat not found")
-
-        if not user.chats.filter(id=chat_id).exists():
-            raise Exception("You are not a member of the chat")
-
-        return await self.repository.create(chat_id=chat_id, user_id=user_id, content=content)
 
     async def mark_message_status(self, message_id: str, status: MessageStatus, **kwargs):
         """Mark a message as sent."""
