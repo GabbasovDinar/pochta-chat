@@ -1,9 +1,9 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from app.api.schemas.websocket import WebSocketMessage
+from app.api.websocket_action_handler import WebSocketActionHandler
 from app.utils import jwt_token
 from app.utils.connection_manager import manager
-from backend.app.api.shemas.websocket import WebSocketMessage
-from backend.app.api.websocket_action_handler import WebSocketActionHandler
 
 router = APIRouter(tags=["websocket"])
 

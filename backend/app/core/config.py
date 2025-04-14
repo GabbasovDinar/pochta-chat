@@ -8,9 +8,9 @@ class Settings(BaseSettings):
     # Database settings
     DATABASE_USER: str = Field(default="postgres")
     DATABASE_PASSWORD: str = Field(default="postgres")
-    DATABASE_HOST: str = Field(default="localhost")
+    DATABASE_HOST: str = Field(default="db")
     DATABASE_PORT: int = Field(default=5432)
-    DATABASE_NAME: str = Field(default="notifier_db")
+    DATABASE_NAME: str = Field(default="pochta_chat_db")
     DATABASE_URL: str | None = None  # If specified, overrides the above settings
 
     # JWT settings
@@ -36,7 +36,7 @@ class Settings(BaseSettings):
         """
         return (
             self.DATABASE_URL
-            or f"postgres://{self.DATABASE_USER}:{self.DATABASE_PASSWORD} "
+            or f"postgres://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}"
             f"@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
         )
 
