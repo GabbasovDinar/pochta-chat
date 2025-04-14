@@ -41,12 +41,12 @@ class ChatActionRequest(BaseModel):
 class MessageOut(BaseModel):
     """Response schema representing a chat message."""
 
-    id: str
-    chat_id: str
-    user_id: str
-    content: str
-    created_at: datetime
-    status: str
+    id: UUID = Field(..., description="The unique identifier of the message.")
+    chat_id: UUID = Field(..., description="The unique identifier of the chat.")
+    user_id: UUID = Field(..., description="The unique identifier of the user.")
+    content: str = Field(..., description="The content of the message.")
+    created_at: datetime = Field(..., description="The creation date of the message.")
+    status: str = Field(..., description="The status of the message.")
 
     class Config:
         """Config for the MessageOut model."""

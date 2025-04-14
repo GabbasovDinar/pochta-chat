@@ -15,11 +15,9 @@ class WebSocketMessage(BaseModel):
     """WebSocket message model."""
 
     action: WebSocketMessageActionEnum = Field(..., description="The action to perform.")
-    chat_id: str | None = Field(None, description="The unique identifier of the chat.")
+    chat_id: UUID | None = Field(None, description="The unique identifier of the chat.")
     content: str | None = Field(None, description="The content of the message.")
-    message_id: UUID | None = Field(
-        None, description="The unique identifier of the message template."
-    )
+    message_id: UUID | None = Field(None, description="The unique identifier of the message.")
 
     class Config:
         """Config for the WebSocketMessage model."""

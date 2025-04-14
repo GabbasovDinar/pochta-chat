@@ -3,13 +3,14 @@ from app.models import User
 from app.repositories.user import user_repository
 from app.utils.jwt import jwt_token
 
-from .base_service import Base
+from .base import Base
 
 
 class UserService(Base):
     """Service for User model operations."""
 
-    async def create(self, name: str, email: str, password: str) -> User:
+    # pylint: disable=arguments-differ
+    async def create(self, name: str, email: str, password: str, **kwargs) -> User:
         """Create a new user."""
         hashed_password = security.hash(password)
         user = await super().create(name=name, email=email, password_hash=hashed_password)

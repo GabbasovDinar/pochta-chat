@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Pochta-Chat SPA</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- jQuery (для манипуляций с DOM) -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <style>
+    .hidden { display: none; }
+    #mainPage { margin-top: 20px; }
+    #chatWindow { border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: auto; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Login Page -->
+    <div id="loginPage">
+      <h2>Вход</h2>
+      <form id="loginForm">
+        <div class="mb-3">
+          <label for="loginUsername" class="form-label">Имя пользователя</label>
+          <input type="text" class="form-control" id="loginUsername" required>
+        </div>
+        <div class="mb-3">
+          <label for="loginPassword" class="form-label">Пароль</label>
+          <input type="password" class="form-control" id="loginPassword" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Войти</button>
+      </form>
+      <p class="mt-3">Нет аккаунта? <a href="#" id="showRegisterLink">Зарегистрируйтесь</a></p>
+    </div>
+
+    <!-- Registration Page -->
+    <div id="registerPage" class="hidden">
+      <h2>Регистрация</h2>
+      <form id="registerForm">
+        <div class="mb-3">
+          <label for="registerUsername" class="form-label">Имя пользователя</label>
+          <input type="text" class="form-control" id="registerUsername" required>
+        </div>
+        <div class="mb-3">
+          <label for="registerEmail" class="form-label">Email</label>
+          <input type="email" class="form-control" id="registerEmail" required>
+        </div>
+        <div class="mb-3">
+          <label for="registerPassword" class="form-label">Пароль</label>
+          <input type="password" class="form-control" id="registerPassword" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+      </form>
+      <p class="mt-3">Уже есть аккаунт? <a href="#" id="showLoginLink">Войти</a></p>
+    </div>
+
+    <!-- Main Page -->
+    <div id="mainPage" class="hidden">
+      <h2>Добро пожаловать в Pochta-Chat</h2>
+      <!-- Navigation tabs -->
+      <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+        <li class="nav-item">
+          <a class="nav-link active" id="users-tab" data-bs-toggle="tab" href="#users" role="tab">Пользователи</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" id="my-chats-tab" data-bs-toggle="tab" href="#my-chats" role="tab">Мои чаты</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" id="all-chats-tab" data-bs-toggle="tab" href="#all-chats" role="tab">Все чаты</a>
+        </li>
+      </ul>
+      <div class="tab-content" id="tabContent" style="margin-top: 20px;">
+        <div class="tab-pane fade show active" id="users" role="tabpanel">
+          <p>Список пользователей (заглушка).</p>
+        </div>
+        <div class="tab-pane fade" id="my-chats" role="tabpanel">
+          <p>Мои чаты (заглушка). Нажмите на чат для его открытия.</p>
+          <div id="myChatsList"></div>
+        </div>
+        <div class="tab-pane fade" id="all-chats" role="tabpanel">
+          <p>Все чаты (заглушка). Нажмите на чат для его открытия.</p>
+          <div id="allChatsList"></div>
+        </div>
+      </div>
+      <!-- Chat Detail -->
+      <div id="chatDetail" class="mt-4 hidden">
+        <h4 id="chatTitle">Чат</h4>
+        <div id="chatWindow"></div>
+        <div class="input-group mt-3">
+          <input type="text" id="chatMessageInput" class="form-control" placeholder="Введите сообщение">
+          <button class="btn btn-primary" id="sendMessageBtn">Отправить</button>
+        </div>
+        <div class="mt-2">
+          <button class="btn btn-warning" id="chatActionBtn"></button>
+          <button class="btn btn-secondary" id="viewMembersBtn">Просмотреть участников</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="config.js"></script>
+  <!-- JavaScript: async/await с Fetch API -->
+  <script>
+    console.log("Backend URL:", window.APP_CONFIG.BASE_URL);
+    // Пример использования: отправка запроса через fetch:
+    async function exampleRequest() {
+      const response = await fetch(window.APP_CONFIG.BASE_URL + "/api/v1/ping");
+      const data = await response.json();
+      console.log(data);
+    }
+    exampleRequest();
+
+
+    // Helper functions for cookies
+    function getCookie(name) {
+      const value = "; " + document.cookie;
+      const parts = value.split("; " + name + "=");
+      if (parts.length === 2) return parts.pop().split(";").shift();
+      return null;
+    }
+
+    function setCookie(name, value, days) {
+      let expires = "";
+      if (days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+      }
+      document.cookie = name + "=" + (value || "") + expires + "; path=/";
+    }
+
+    // API URLs
+    const API_BASE = "/api/v1";
+    const WS_URL = "ws://" + window.location.host + "/ws/connection";
+
+    let socket = null;
+    let currentChatId = null;
+
+    // Using async/await with fetch for login, registration, etc.
+    async function loginUser(username, password) {
+      const response = await fetch(API_BASE + "/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail);
+      }
+      return response.json();
+    }
+
+    async function registerUser(username, email, password) {
+      const response = await fetch(API_BASE + "/users/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, password })
+      });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail);
+      }
+      return response.json();
+    }
+
+    async function joinChatRequest(chatId) {
+      const token = getCookie("token");
+      const response = await fetch(API_BASE + "/chats/join/" + chatId, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        }
+      });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail);
+      }
+      return response.json();
+    }
+
+    async function leaveChatRequest(chatId) {
+      const token = getCookie("token");
+      const response = await fetch(API_BASE + "/chats/leave/" + chatId, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        }
+      });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail);
+      }
+      return response.json();
+    }
+
+    async function loadChatHistory(chatId) {
+      const token = getCookie("token");
+      const response = await fetch(API_BASE + "/chats/history/" + chatId + "?limit=100&offset=0", {
+        headers: { "Authorization": "Bearer " + token }
+      });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail);
+      }
+      return response.json();
+    }
+
+    // DOM ready
+    $(document).ready(function () {
+      const token = getCookie("token");
+      if (token) {
+        showMainPage();
+      } else {
+        $("#loginPage").show();
+      }
+    });
+
+    // Toggle login/registration forms
+    $("#showRegisterLink").click(function (e) {
+      e.preventDefault();
+      $("#loginPage").hide();
+      $("#registerPage").show();
+    });
+
+    $("#showLoginLink").click(function (e) {
+      e.preventDefault();
+      $("#registerPage").hide();
+      $("#loginPage").show();
+    });
+
+    // Login form submission with async/await
+    $("#loginForm").submit(async function (e) {
+      e.preventDefault();
+      const username = $("#loginUsername").val();
+      const password = $("#loginPassword").val();
+      try {
+        const response = await loginUser(username, password);
+        setCookie("token", response.access_token, 1);
+        showMainPage();
+      } catch (err) {
+        alert("Ошибка логина: " + err.message);
+      }
+    });
+
+    // Registration form submission with async/await
+    $("#registerForm").submit(async function (e) {
+      e.preventDefault();
+      const username = $("#registerUsername").val();
+      const email = $("#registerEmail").val();
+      const password = $("#registerPassword").val();
+      try {
+        const response = await registerUser(username, email, password);
+        alert(response.msg);
+        $("#registerPage").hide();
+        $("#loginPage").show();
+      } catch (err) {
+        alert("Ошибка регистрации: " + err.message);
+      }
+    });
+
+    async function loadMyChats() {
+    const token = getCookie("token");
+    try {
+      const response = await fetch(API_BASE + "/chats/my", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        }
+      });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail);
+      }
+      const data = await response.json();
+      // Предполагаем, что data.result — это массив объектов чата: { id, name }
+      let html = "";
+      data.result.forEach(chat => {
+        // При клике вызываем openChat с флагом isMember=true
+        html += `<div class="chat-item" style="cursor:pointer;" onclick="openChat('${chat.id}', '${chat.name}', true)">${chat.name}</div>`;
+      });
+      $("#myChatsList").html(html);
+    } catch (err) {
+      alert("Ошибка загрузки моих чатов: " + err.message);
+    }
+  }
+
+  // Функция загрузки всех чатов
+  async function loadAllChats() {
+    const token = getCookie("token");
+    try {
+      const response = await fetch(API_BASE + "/chats/all", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        }
+      });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail);
+      }
+      const data = await response.json();
+      // Предполагаем, что data.result — это массив объектов чата: { id, name }
+      let html = "";
+      data.result.forEach(chat => {
+        // При клике вызываем openChat с флагом isMember=false
+        html += `<div class="chat-item" style="cursor:pointer;" onclick="openChat('${chat.id}', '${chat.name}', false)">${chat.name}</div>`;
+      });
+      $("#allChatsList").html(html);
+    } catch (err) {
+      alert("Ошибка загрузки всех чатов: " + err.message);
+    }
+  }
+
+  // Функция загрузки списка пользователей
+  async function loadUsers() {
+    const token = getCookie("token");
+    try {
+      const response = await fetch(API_BASE + "/users", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        }
+      });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail);
+      }
+      const data = await response.json();
+      // Предполагаем, что data.result — это массив пользователей, например, { id, username }
+      let html = "";
+      data.result.forEach(user => {
+        html += `<div class="user-item">${user.username}</div>`;
+      });
+      // Предполагаем, что у вас есть контейнер для пользователей с id="users" в разделе вкладки "Пользователи"
+      $("#users").html(html);
+    } catch (err) {
+      alert("Ошибка загрузки пользователей: " + err.message);
+    }
+  }
+
+    async function loadInitialData() {
+        await loadMyChats();
+        await loadAllChats();
+        await loadUsers();
+    }
+
+    // Show main page and open WebSocket connection
+    function showMainPage() {
+      $("#loginPage").hide();
+      $("#registerPage").hide();
+      $("#mainPage").show();
+      connectWebSocket();
+      loadInitialData();
+    }
+
+    // WebSocket connection using async/await pattern (the WS API is callback-based)
+    function connectWebSocket() {
+      const token = getCookie("token");
+      socket = new WebSocket(WS_URL + "?token=" + token);
+      socket.onopen = function () {
+        console.log("WebSocket соединение установлено");
+      };
+      socket.onmessage = function (event) {
+        const data = JSON.parse(event.data);
+        // Если сообщение для открытого чата
+        if (data.type === "message" && currentChatId && data.chat_id === currentChatId) {
+          appendMessage(data);
+        }
+        // Обработка других уведомлений...
+      };
+      socket.onclose = function () {
+        console.log("WebSocket соединение закрыто");
+      };
+      socket.onerror = function (error) {
+        console.log("WebSocket ошибка: ", error);
+      };
+    }
+
+    // Open chat and load history
+    async function openChat(chatId, chatTitle, isMember) {
+      currentChatId = chatId;
+      $("#chatTitle").text(chatTitle);
+      $("#chatWindow").empty();
+      $("#chatDetail").removeClass("hidden");
+      if (isMember) {
+        $("#chatActionBtn").text("Выйти из чата").off('click').click(function () {
+          leaveChat(chatId);
+        });
+      } else {
+        $("#chatActionBtn").text("Вступить в чат").off('click').click(function () {
+          joinChat(chatId);
+        });
+      }
+      try {
+        const history = await loadChatHistory(chatId);
+        $("#chatWindow").empty();
+        history.result.forEach(function (message) {
+          appendMessage({
+            id: message.id,
+            chat_id: message.chat_id,
+            user_id: message.user_id,
+            content: message.content,
+            timestamp: message.timestamp,
+            status: message.status
+          });
+        });
+      } catch (err) {
+        alert("Ошибка загрузки истории: " + err.message);
+      }
+    }
+
+    // Function to append message to chat window
+    function appendMessage(message) {
+      const msgHtml = `<div><strong>${message.user_id}:</strong> ${message.content} <small>(${new Date(message.timestamp).toLocaleTimeString()}) [${message.status}]</small></div>`;
+      $("#chatWindow").append(msgHtml);
+      $("#chatWindow").scrollTop($("#chatWindow")[0].scrollHeight);
+    }
+
+    // Join chat using async/await
+    async function joinChat(chatId) {
+      try {
+        const response = await joinChatRequest(chatId);
+        alert(response.msg);
+        loadChatHistory(chatId);
+        $("#chatActionBtn").text("Выйти из чата").off('click').click(function () {
+          leaveChat(chatId);
+        });
+      } catch (err) {
+        alert("Ошибка: " + err.message);
+      }
+    }
+
+    // Leave chat using async/await
+    async function leaveChat(chatId) {
+      try {
+        const response = await leaveChatRequest(chatId);
+        alert(response.msg);
+        $("#chatWindow").empty();
+        $("#chatActionBtn").text("Вступить в чат").off('click').click(function () {
+          joinChat(chatId);
+        });
+      } catch (err) {
+        alert("Ошибка: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
