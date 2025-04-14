@@ -8,6 +8,7 @@ class ChatMembership(Base):
 
     user = fields.ForeignKeyField("models.User", related_name="chats", on_delete=fields.CASCADE)
     chat = fields.ForeignKeyField("models.Chat", related_name="members", on_delete=fields.CASCADE)
+    last_read_time = fields.DatetimeField(null=True)
 
     class Meta:
         """Meta class for ChatMembership model."""
