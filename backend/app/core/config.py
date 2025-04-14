@@ -17,7 +17,6 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(default="your-secret-key")
     ALGORITHM: str = Field(default="HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60)
-    REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7)
 
     # Passlib CryptContext Settings
     PASSWORD_CRYPT_ALGORITHM: str = Field(default="bcrypt")
