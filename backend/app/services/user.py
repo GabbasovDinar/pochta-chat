@@ -1,7 +1,7 @@
+from app.core.security import security
 from app.models import User
 from app.repositories.user import user_repository
 from app.utils.jwt import jwt_token
-from app.utils.security import security
 
 from .base_service import Base
 

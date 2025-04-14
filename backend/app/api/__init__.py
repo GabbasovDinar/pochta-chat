@@ -1,5 +1,4 @@
 # pylint: disable=import-self
-# TODO: fix this
 
 from . import dependencies, routers, schemas
 

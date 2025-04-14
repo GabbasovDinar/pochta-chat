@@ -1,25 +1,5 @@
-from .shemas import (
-    ChatIn,
-    ChatMembershipIn,
-    ChatMembershipOut,
-    ChatOut,
-    Login,
-    MessageIn,
-    MessageOut,
-    Token,
-    UserIn,
-    UserOut,
-)
+# pylint: disable=import-self
 
-__all__ = [
-    "Token",
-    "Login",
-    "UserOut",
-    "UserIn",
-    "ChatOut",
-    "ChatIn",
-    "ChatMembershipOut",
-    "ChatMembershipIn",
-    "MessageOut",
-    "MessageIn",
-]
+from . import schemas
+
+__all__ = ["schemas"]

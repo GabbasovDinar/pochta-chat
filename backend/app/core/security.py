@@ -4,10 +4,10 @@ from app.core.config import settings
 
 
 class Security:
-    """Security utilities for password hashing and verification."""
+    """Security for password hashing and verification."""
 
     def __init__(self, algorithm: str, rounds: int):
-        """Initialize the security utilities."""
+        """Initialize the security."""
         crypt_context_config = {
             "schemes": [algorithm],
             "deprecated": "auto",
