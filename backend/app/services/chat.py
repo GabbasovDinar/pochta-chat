@@ -1,4 +1,4 @@
-from app.models import Message, MessageStatus
+from app.models import ChatMembership, Message, MessageStatus
 from app.repositories.chat import chat_repository
 from app.repositories.message import message_repository
 from app.repositories.user import user_repository
@@ -63,6 +63,37 @@ class ChatService(Base):
         return await message_repository.create(
             chat_id=chat_id, user_id=user_id, content=content, status=MessageStatus.SENT
         )
+
+    async def mark_read_message(self, chat_id: str, message_id: str, user_id: str) -> Message:
+        """Mark a message as read by the current user."""
+        user = await user_repository.get_by_id(user_id)
+        if not user.chats.filter(id=chat_id).exists():
+            raise Exception("User is not a member of the chat")
+
+        message = await message_repository.get_by_id(message_id)
+        if not message or str(message.chat_id) != chat_id:
+            raise Exception("Message not found in this chat")
+
+        membership = await self.get_membership(user_id, chat_id)
+        if membership:
+            membership.last_read_time = message.created_at
+            await membership.save()
+
+        if str(message.user_id) == user_id:
+            return None
+
+        member_ids = await self.get_member_ids(chat_id)
+        recipients = [member_id for member_id in member_ids if member_id != message.user_id]
+
+        if all(recipient.last_read_time > message.created_at for recipient in recipients):
+            message.status = MessageStatus.READ
+            await message.save()
+
+        return message
+
+    async def get_membership(self, user_id: str, chat_id: str) -> ChatMembership:
+        """Get membership of a user in a chat."""
+        return await self.repository.get_membership(user_id, chat_id)
 
     async def get_member_ids(self, chat_id: str) -> list:
         """Get members of a chat."""

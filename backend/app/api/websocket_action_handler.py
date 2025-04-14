@@ -1,7 +1,6 @@
 from fastapi import WebSocket
 
 from app.services.chat import chat_service
-from app.services.message import message_service
 from app.utils.connection_manager import manager
 
 
@@ -42,9 +41,11 @@ class WebSocketActionHandler:
         if not message_id:
             return await self.websocket.send_json({"error": "Invalid read event data"})
 
-        message = await message_service.mark_read(message_id=message_id)
+        message = await chat_service.mark_read_message(
+            chat_id=data.get("chat_id"), message_id=message_id, user_id=self.user_id
+        )
         if not message:
-            return await self.websocket.send_json({"error": "Message not found"})
+            return
 
         notify_payload = {
             "type": "notification",
