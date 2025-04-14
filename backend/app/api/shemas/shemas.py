@@ -21,11 +21,6 @@ class Token(BaseModel):
     exp: int = Field(
         ..., description="The expiration time of the access token in UNIX timestamp format."
     )
-    refresh_token: str | None = Field(
-        None,
-        description="The refresh token used to obtain a new access "
-        "token when the current one expires.",
-    )
 
     class Config:
         """Config for the Token model."""
@@ -35,7 +30,6 @@ class Token(BaseModel):
                 "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                 "token_type": "bearer",
                 "exp": 1683509340,
-                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
             }
         }
 

@@ -1,4 +1,3 @@
-from .chat import chat_service
-from .user import user_service
+from . import chat, message, user
 
-__all__ = ["chat_service", "user_service"]
+__all__ = ["chat", "message", "user"]
