@@ -1,5 +1,5 @@
 # pylint: disable=import-self
 
-from . import schemas
+from . import chat, user, websocket
 
-__all__ = ["schemas"]
+__all__ = ["chat", "user", "websocket"]

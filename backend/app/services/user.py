@@ -33,7 +33,10 @@ class UserService(Base):
         if user:
             raise Exception("User already exists")
 
-        return await self.create(name=name, email=email, password=password)
+        user = await self.create(name=name, email=email, password=password)
+
+        # automatically login the user after registration
+        return self.login(email, password)
 
     async def login(self, email: str, password: str) -> str:
         """Login a user."""

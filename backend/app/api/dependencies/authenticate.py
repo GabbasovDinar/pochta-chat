@@ -6,8 +6,7 @@ from app.utils.jwt import jwt_token
 
 security = HTTPBasic()
 
-# TODO: check this
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/users/login")
 
 
 async def oauth2_authenticate(token: str = Depends(oauth2_scheme)):
