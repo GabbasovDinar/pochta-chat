@@ -1,15 +1,16 @@
 from fastapi import WebSocket
 
 from app.services.chat import chat_service
-from app.utils.connection_manager import manager
+from app.utils.connection_manager import ConnectionManager
 
 
 class WebSocketActionHandler:
     """Handle WebSocket actions."""
 
-    def __init__(self, websocket: WebSocket, user_id: str):
+    def __init__(self, websocket: WebSocket, manager: ConnectionManager, user_id: str):
         """Initialize the WebSocketActionHandler."""
         self.websocket = websocket
+        self.manager = manager
         self.user_id = user_id
 
     async def send(self, data: dict) -> None:
@@ -33,7 +34,7 @@ class WebSocketActionHandler:
             "timestamp": message.created_at.isoformat(),
             "status": message.status,
         }
-        await manager.broadcast(message_payload, recipient_ids)
+        await self.manager.broadcast(message_payload, recipient_ids)
 
     async def read(self, data: dict) -> None:
         """Mark a message as read."""
@@ -53,7 +54,7 @@ class WebSocketActionHandler:
             "message_id": str(message.id),
             "status": message.status,
         }
-        await manager.send_personal_message(notify_payload, str(message.user_id))
+        await self.manager.send_personal_message(notify_payload, str(message.user_id))
 
     async def process(self, data: dict) -> None:
         """Process an action."""

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.dependencies.authenticate import oauth2_authenticate
 from app.api.dependencies.services import get_chat_service
-from app.api.shemas.chat import (
+from app.api.schemas.chat import (
     ChatActionRequest,
     ChatActionResponse,
     ChatHistoryResponse,

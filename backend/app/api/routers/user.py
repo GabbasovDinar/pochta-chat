@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.dependencies.services import get_user_service
-from app.api.shemas.user import RegisterIn, Token
+from app.api.schemas.user import RegisterIn, Token
 from app.services.user import UserService
 
 router = APIRouter(prefix="/users", tags=["users"])

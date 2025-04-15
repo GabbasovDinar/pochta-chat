@@ -1,9 +1,9 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from app.api.schemas.websocket import WebSocketMessage
+from app.api.websocket_action_handler import WebSocketActionHandler
 from app.utils import jwt_token
 from app.utils.connection_manager import manager
-from backend.app.api.shemas.websocket import WebSocketMessage
-from backend.app.api.websocket_action_handler import WebSocketActionHandler
 
 router = APIRouter(tags=["websocket"])
 
@@ -39,7 +39,7 @@ async def websocket_connection(websocket: WebSocket):
         return
 
     await manager.connect(user_id, websocket)
-    action_handler = WebSocketActionHandler(websocket, user_id)
+    action_handler = WebSocketActionHandler(websocket, manager, user_id)
 
     try:
         while True:
@@ -53,4 +53,4 @@ async def websocket_connection(websocket: WebSocket):
             await action_handler.process(data)
 
     except WebSocketDisconnect:
-        manager.disconnect(int(user_id), websocket)
+        manager.disconnect(user_id, websocket)
