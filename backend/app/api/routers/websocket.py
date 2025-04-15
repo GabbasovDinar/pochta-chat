@@ -39,7 +39,7 @@ async def websocket_connection(websocket: WebSocket):
         return
 
     await manager.connect(user_id, websocket)
-    action_handler = WebSocketActionHandler(websocket, user_id)
+    action_handler = WebSocketActionHandler(websocket, manager, user_id)
 
     try:
         while True:
@@ -53,4 +53,4 @@ async def websocket_connection(websocket: WebSocket):
             await action_handler.process(data)
 
     except WebSocketDisconnect:
-        manager.disconnect(int(user_id), websocket)
+        manager.disconnect(user_id, websocket)
