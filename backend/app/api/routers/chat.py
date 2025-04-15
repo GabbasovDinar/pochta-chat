@@ -4,43 +4,49 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.dependencies.authenticate import oauth2_authenticate
 from app.api.dependencies.services import get_chat_service
+from app.api.shemas.chat import (
+    ChatActionRequest,
+    ChatActionResponse,
+    ChatHistoryResponse,
+    ChatMembersResponse,
+)
 from app.models.user import User
 from app.services.chat import ChatService
 
-router = APIRouter(prefix="/chat", tags=["chat"])
+router = APIRouter(prefix="/chats", tags=["chats"])
 
 
-@router.post("/join/{chat_id}")
+@router.post("/join/{chat_id}", response_model=ChatActionResponse)
 async def join_chat(
-    chat_id: Annotated[str, ...],
+    data: ChatActionRequest,
     user: Annotated[User, Depends(oauth2_authenticate)],
     chat_service: Annotated[ChatService, Depends(get_chat_service)],
 ):
     """Join a chat."""
     try:
-        result = await chat_service.join(chat_id, str(user.id))
+        result = await chat_service.join(data.chat_id, str(user.id))
         return {"msg": "Successfully joined the chat", "result": result}
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
 
-@router.post("/leave/{chat_id}")
+@router.post("/leave/{chat_id}", response_model=ChatActionResponse)
 async def leave_chat(
-    chat_id: str,
+    data: ChatActionRequest,
     user: Annotated[User, Depends(oauth2_authenticate)],
     chat_service: Annotated[ChatService, Depends(get_chat_service)],
 ):
     """Leave a chat."""
     try:
-        result = await chat_service.leave(chat_id, str(user.id))
+        result = await chat_service.leave(data.chat_id, str(user.id))
         return {"msg": "Successfully left the chat", "result": result}
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
 
-@router.get("/history/{chat_id}")
+@router.get("/history/{chat_id}", response_model=ChatHistoryResponse)
 async def get_message_history(
-    chat_id: Annotated[str, ...],
+    data: ChatActionRequest,
     limit: int = 50,
     offset: int = 0,
     user: Annotated[User, Depends(oauth2_authenticate)] = None,
@@ -48,21 +54,21 @@ async def get_message_history(
 ):
     """Get message history."""
     try:
-        result = await chat_service.get_history(chat_id, str(user.id), limit, offset)
+        result = await chat_service.get_history(data.chat_id, str(user.id), limit, offset)
         return {"msg": "Successfully got message history", "result": result}
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
 
-@router.get("/members/{chat_id}")
+@router.get("/members/{chat_id}", response_model=ChatMembersResponse)
 async def get_chat_members(
-    chat_id: Annotated[str, ...],
+    data: ChatActionRequest,
     user: Annotated[User, Depends(oauth2_authenticate)],
     chat_service: Annotated[ChatService, Depends(get_chat_service)],
 ):
     """Get chat members."""
     try:
-        result = await chat_service.get_members(chat_id)
+        result = await chat_service.get_members(data.chat_id)
         return {"msg": "Successfully got chat members", "result": result}
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e

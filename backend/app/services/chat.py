@@ -3,7 +3,7 @@ from app.repositories.chat import chat_repository
 from app.repositories.message import message_repository
 from app.repositories.user import user_repository
 
-from .base_service import Base
+from .base import Base
 
 
 class ChatService(Base):
