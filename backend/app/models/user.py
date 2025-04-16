@@ -13,4 +13,4 @@ class User(Base):
     password_hash = fields.CharField(max_length=255)
 
     sent_messages: fields.ReverseRelation["Message"]
-    chats: fields.ReverseRelation["ChatMembership"]
+    chat_memberships: fields.ReverseRelation["ChatMembership"]

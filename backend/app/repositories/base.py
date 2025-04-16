@@ -14,24 +14,33 @@ class Base(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def update(self, **kwargs):
+    async def update(self, instance, **kwargs):
         """Update an existing instance of the model."""
         raise NotImplementedError
 
     @abstractmethod
-    async def delete(self, **kwargs):
+    async def delete(self, instance):
         """Delete an existing instance of the model."""
         raise NotImplementedError
 
     @abstractmethod
-    async def get_single(self, **kwargs):
-        """Get a single instance of the model."""
+    async def search(
+        self,
+        filter: dict,
+        order: str = "id",
+        limit: int = 1000,
+        offset: int = 0,
+        prefetch_fields: list[str] = [],
+    ):
+        """Search for instances of the model."""
         raise NotImplementedError
 
-    async def get_multi(self, order: str = "id", limit: int = 100, offset: int = 0):
-        """Get multiple instances of the model."""
+    @abstractmethod
+    async def browse(self, id: str, prefetch_fields: list[str] = []):
+        """Browse for instances of the model."""
         raise NotImplementedError
 
-    async def get_all(self):
-        """Get all instances of the model."""
+    @abstractmethod
+    async def exists(self, filter: dict):
+        """Check if an instance of the model exists."""
         raise NotImplementedError
