@@ -1,10 +1,10 @@
-from tortoise.exceptions import DoesNotExist
-
 from .base import Base
 
 
 class TortoiseRepository(Base):
     """Repository for Tortoise model operations."""
+
+    PREFETCH_FIELDS = []
 
     async def create(self, **kwargs):
         """Create a new instance of the model."""
@@ -18,29 +18,39 @@ class TortoiseRepository(Base):
         await instance.save()
         return instance
 
-    async def delete(self, **kwargs):
+    async def delete(self, instance):
         """Delete an existing instance of the model."""
-        deletion_count = await self.model.filter(**kwargs).delete()
-        return deletion_count
+        await instance.delete()
+        return True
 
-    async def get_single(self, **kwargs):
-        """Get a single instance of the model."""
-        try:
-            instance = await self.model.get(**kwargs)
-            return instance
-        except DoesNotExist:
-            return None
+    async def search(
+        self,
+        filter: dict,
+        order: str = "id",
+        limit: int = 1000,
+        offset: int = 0,
+        prefetch_fields: list[str] = [],
+    ):
+        """Search for instances of the model."""
+        if filter:
+            query = self.model.filter(**filter)
+        else:
+            query = self.model.all()
 
-    async def get_multi(self, order: str = "id", limit: int = 100, offset: int = 0):
-        """Get multiple instances of the model."""
-        instances = await self.model.all().order_by(order).offset(offset).limit(limit)
-        return instances
+        query = query.order_by(order).offset(offset).limit(limit)
+        prefetch_fields = prefetch_fields or self.PREFETCH_FIELDS
+        if prefetch_fields:
+            query = query.prefetch_related(*prefetch_fields)
+        return await query
 
-    async def get_all(self):
-        """Get all instances of the model."""
-        instances = await self.model.all()
-        return instances
+    async def browse(self, id: str, prefetch_fields: list[str] = []):
+        """Browse for instances of the model."""
+        query = self.model.get_or_none(id=id)
+        prefetch_fields = prefetch_fields or self.PREFETCH_FIELDS
+        if prefetch_fields:
+            query = query.prefetch_related(*prefetch_fields)
+        return await query
 
-    async def get_by_id(self, model_id: str):
-        """Get an instance of the model by its ID."""
-        return await self.model.get_or_none(id=model_id)
+    async def exists(self, filter: dict):
+        """Check if an instance of the model exists."""
+        return await self.model.exists(**filter)

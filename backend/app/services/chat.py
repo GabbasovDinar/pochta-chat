@@ -1,122 +1,150 @@
-from app.models import ChatMembership, Message, MessageStatus
-from app.repositories.chat import chat_repository
-from app.repositories.message import message_repository
-from app.repositories.user import user_repository
+from app.models import Chat, Message, MessageStatus, User
+from app.models.chat import ChatType
+from app.repositories.chat import ChatRepository
 
 from .base import Base
+from .chat_membership import ChatMembershipService
+from .message import MessageService
+from .user import UserService
 
 
 class ChatService(Base):
     """Service for Chat model operations."""
 
+    def __init__(
+        self,
+        repository: ChatRepository,
+        message_service: MessageService,
+        chat_membership_service: ChatMembershipService,
+        user_service: UserService,
+    ):
+        self.repository = repository
+        self.message_service = message_service
+        self.chat_membership_service = chat_membership_service
+        self.user_service = user_service
+
+    async def ensure_exists(self, chat_id: str) -> Chat:
+        """Ensure that a chat exists."""
+        chat = await self.browse(chat_id)
+        if not chat:
+            raise Exception("Chat not found.")
+        return chat
+
     async def join(self, chat_id: str, user_id: str) -> bool:
         """Join a chat."""
-        user = await user_repository.get_by_id(user_id)
-        if not user:
-            raise Exception("User not found")
+        chat = await self.ensure_exists(chat_id)
+        if chat.chat_type == ChatType.PRIVATE:
+            raise Exception("Cannot join a private chat.")
 
-        chat = await self.get_by_id(chat_id)
-        if not chat:
-            raise Exception("Chat not found")
-
-        if chat.chat_type == "private":
-            raise Exception("Cannot join a private chat")
-
-        # check if user is already a member
-        if user.chats.filter(id=chat_id).exists():
-            raise Exception("User is already a member of the chat")
-
-        # create membership
-        user.chats.add(chat)
-        await user.save()
-
+        await self.chat_membership_service.create(user_id=user_id, chat_id=chat_id)
         return True
 
     async def leave(self, chat_id: str, user_id: str) -> bool:
         """Leave a chat."""
-        user = await user_repository.get_by_id(user_id)
-        if not user:
-            raise Exception("User not found")
+        return await self.chat_membership_service.leave(chat_id, user_id)
 
-        chat = await self.get_by_id(chat_id)
-        if not chat:
-            raise Exception("Chat not found")
+    async def get_history(
+        self, chat_id: str, order: str = "created_at", limit: int = 100, offset: int = 0
+    ):
+        """Get history of a chat."""
+        await self.ensure_exists(chat_id)
+        return await self.message_service.search({"chat_id": chat_id})
 
-        if not user.chats.filter(id=chat_id).exists():
-            raise Exception("User is not a member of the chat")
+    async def get_group_chats(self, user_id: str) -> list[Chat]:
+        """Get all group chats of a user."""
+        return await self.search({"chat_type": ChatType.GROUP})
 
-        user.chats.remove(chat)
-        await user.save()
+    async def action_create(self, user_ids: list[str], chat_type: ChatType, name: str) -> Chat:
+        """Action to create a chat."""
+        if chat_type == ChatType.PRIVATE:
+            # don't create new private chat if it already exists
+            chat = await self.get_private_chat(user_ids)
+            if chat:
+                return chat
 
+        # create new chat
+        chat = await self.create(chat_type=chat_type, name=name or ChatType.PRIVATE)
+        # create chat memberships
+        for user_id in user_ids:
+            await self.chat_membership_service.create(user_id=user_id, chat_id=chat.id)
+
+        return await self.browse(chat.id)
+
+    async def get_private_chat(self, user_ids: list[str]) -> Chat | None:
+        """Get a private chat between chat users."""
+        chats = await self.search({"chat_type": ChatType.PRIVATE})
+
+        target = set([str(user_id) for user_id in user_ids])
+        for chat in chats:
+            members = {str(m.user.id) for m in chat.memberships}
+            if members == target:
+                return chat
+        return None
+
+    async def get_users(self, chat_id: str) -> list[User]:
+        """Get users of a chat."""
+        memberships = await self.chat_membership_service.search({"chat_id": chat_id})
+        return [membership.user for membership in memberships]
+
+    async def _websocket_callback(self, current_user, data, connection):
+        """WebSocket callback."""
+        chat_id = data["chat_id"]
+        await self.ensure_exists(chat_id)
+
+        action = data["action"]
+        if action == "create":
+            message = await self.message_service.create(**{
+                "chat_id": chat_id,
+                "user_id": current_user.id,
+                "content": data["content"],
+                "status": MessageStatus.SENT,
+            })
+        elif action == "read":
+            message = await self.message_mark_read(data["message_id"], current_user)
+        else:
+            raise Exception("Invalid action")
+
+        user_ids = await self._prepare_callback_user_ids(current_user, data)
+        payload = self.message_service._prepare_websocket_payload(message)
+        await connection.broadcast(payload, user_ids)
         return True
 
-    async def send_message(self, user_id: str, chat_id: str, content: str) -> Message:
-        """Send a message."""
-        user = await user_repository.get_by_id(user_id)
-        chat = await self.get_by_id(chat_id)
-        if not chat:
-            raise Exception("Chat not found")
+    async def _prepare_callback_user_ids(self, current_user, data) -> list[str]:
+        """Prepare users for callback."""
+        action = data["action"]
+        if action == "read":
+            return [str(current_user.id)]
 
-        if not user.chats.filter(id=chat_id).exists():
-            raise Exception("You are not a member of the chat")
+        users = await self.get_users(data["chat_id"])
+        return [str(user.id) for user in users]
 
-        return await message_repository.create(
-            chat_id=chat_id, user_id=user_id, content=content, status=MessageStatus.SENT
+    async def message_mark_read(self, message_id: str, user: User) -> Message:
+        """Mark a message as read."""
+        message = await self.message_service.browse(message_id)
+        if not message:
+            raise Exception("Message not found")
+
+        membership = await self.chat_membership_service.search({
+            "user_id": user.id,
+            "chat_id": message.chat_id,
+        })
+        if not membership:
+            raise Exception("User is not a member of the chat")
+
+        membership = membership[0]
+
+        await self.chat_membership_service.update(
+            membership, **{"last_read_time": message.created_at}
         )
 
-    async def mark_read_message(self, chat_id: str, message_id: str, user_id: str) -> Message:
-        """Mark a message as read by the current user."""
-        user = await user_repository.get_by_id(user_id)
-        if not user.chats.filter(id=chat_id).exists():
-            raise Exception("User is not a member of the chat")
+        memberships = await self.chat_membership_service.search({"chat_id": message.chat_id})
+        all_read = True
+        for membership in memberships:
+            if membership.last_read_time is None or membership.last_read_time < message.created_at:
+                all_read = False
+                break
 
-        message = await message_repository.get_by_id(message_id)
-        if not message or str(message.chat_id) != chat_id:
-            raise Exception("Message not found in this chat")
-
-        membership = await self.get_membership(user_id, chat_id)
-        if membership:
-            membership.last_read_time = message.created_at
-            await membership.save()
-
-        if str(message.user_id) == user_id:
-            return None
-
-        member_ids = await self.get_member_ids(chat_id)
-        recipients = [member_id for member_id in member_ids if member_id != message.user_id]
-
-        if all(recipient.last_read_time > message.created_at for recipient in recipients):
-            message.status = MessageStatus.READ
-            await message.save()
+        if all_read:
+            await self.update(message, **{"status": MessageStatus.READ})
 
         return message
-
-    async def get_membership(self, user_id: str, chat_id: str) -> ChatMembership:
-        """Get membership of a user in a chat."""
-        return await self.repository.get_membership(user_id, chat_id)
-
-    async def get_member_ids(self, chat_id: str) -> list:
-        """Get members of a chat."""
-        chat = await self.get_by_id(chat_id)
-        if not chat:
-            raise Exception("Chat not found")
-
-        return [str(membership.user_id) for membership in chat.memberships]
-
-    async def get_history(self, chat_id: str, user_id: str, limit: int = 50, offset: int = 0):
-        """Get history of a chat."""
-        user = await user_repository.get_by_id(user_id)
-        if not user:
-            raise Exception("User not found")
-
-        if not user.chats.filter(id=chat_id).exists():
-            raise Exception("User is not a member of the chat")
-
-        chat = await self.get_by_id(chat_id)
-        if not chat:
-            raise Exception("Chat not found")
-
-        return await message_repository.get_messages_by_chat(chat_id, limit, offset)
-
-
-chat_service = ChatService(repository=chat_repository)

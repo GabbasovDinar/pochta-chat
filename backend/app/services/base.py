@@ -5,30 +5,26 @@ class Base:
         """Initialize the service."""
         self.repository = repository
 
-    async def create(self, *args, **kwargs):
+    async def create(self, **kwargs):
         """Create a new instance of the model."""
-        return await self.repository.create(data=kwargs)
+        return await self.repository.create(**kwargs)
 
     async def update(self, instance, **kwargs):
         """Update an existing instance of the model."""
-        return await self.repository.update(instance, data=kwargs)
+        return await self.repository.update(instance, **kwargs)
 
-    async def delete(self, **kwargs):
+    async def delete(self, instance):
         """Delete an existing instance of the model."""
-        return await self.repository.delete(data=kwargs)
+        return await self.repository.delete(instance)
 
-    async def get_single(self, **kwargs):
-        """Get a single instance of the model."""
-        return await self.repository.get_single(data=kwargs)
+    async def search(self, filter: dict, order: str = "id", limit: int = 1000, offset: int = 0):
+        """Search for instances of the model."""
+        return await self.repository.search(filter, order, limit, offset)
 
-    async def get_multi(self, order: str = "id", limit: int = 100, offset: int = 0):
-        """Get multiple instances of the model."""
-        return await self.repository.get_multi(order=order, limit=limit, offset=offset)
+    async def browse(self, id: str):
+        """Browse for instances of the model."""
+        return await self.repository.browse(id)
 
-    async def get_all(self):
-        """Get all instances of the model."""
-        return await self.repository.get_all()
-
-    async def get_by_id(self, model_id: str):
-        """Get an instance of the model by its ID."""
-        return await self.repository.get_by_id(model_id)
+    async def exists(self, filter: dict):
+        """Check if an instance of the model exists."""
+        return await self.repository.exists(filter)

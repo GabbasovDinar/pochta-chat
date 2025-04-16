@@ -6,8 +6,12 @@ from .base import Base
 class ChatMembership(Base):
     """Chat membership model representing a user's membership in a chat."""
 
-    user = fields.ForeignKeyField("models.User", related_name="chats", on_delete=fields.CASCADE)
-    chat = fields.ForeignKeyField("models.Chat", related_name="members", on_delete=fields.CASCADE)
+    user = fields.ForeignKeyField(
+        "models.User", related_name="chat_memberships", on_delete=fields.CASCADE
+    )
+    chat = fields.ForeignKeyField(
+        "models.Chat", related_name="memberships", on_delete=fields.CASCADE
+    )
     last_read_time = fields.DatetimeField(null=True)
 
     class Meta:

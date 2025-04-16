@@ -1,0 +1,49 @@
+.hidden { display: none; }
+#mainPage { margin-top: 20px; }
+#chatWindow { border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: auto; }
+/* Кнопка проверки соединения в левом верхнем углу */
+#checkConnectionBtn {
+  position: fixed;
+  top: 10px;
+  right: 100px;
+  z-index: 1000;
+}
+/* Кнопка Logout в правом верхнем углу */
+#logoutBtn {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+}
+/* Стили для списка пользователей и чатов */
+.user-item, .chat-item {
+  padding: 5px;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.user-name, .chat-name {
+  font-weight: bold;
+}
+.write-btn {
+  font-size: 0.8rem;
+}
+.text-start {
+    margin: 10px;
+    background: #ffe6e6;
+
+    padding: 10px;
+    border-radius: 10px;
+}
+.text-end {
+    margin: 10px;
+    padding: 10px;
+    border-radius: 10px;
+    background: #e6ffe9;
+
+}
+.text-end small,
+.text-start small {
+    font-size: .575em;
+}

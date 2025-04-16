@@ -1,3 +1,3 @@
-from . import authenticate, services
+from . import authenticate, services, websocket
 
-__all__ = ["authenticate", "services"]
+__all__ = ["authenticate", "services", "websocket"]

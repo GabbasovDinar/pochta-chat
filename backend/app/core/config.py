@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     PASSWORD_CRYPT_ALGORITHM: str = Field(default="bcrypt")
     PASSWORD_HASHING_ROUNDS: int = Field(default=12)
 
+    # CORS settings
+    CORS_ORIGINS: list[str] = Field(default=["http://localhost", "http://localhost:80"])
+
     class Config:
         """Config for the Settings class."""
 

@@ -1,56 +1,64 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 
+from app.api.dependencies.services import get_chat_service
+from app.api.dependencies.websocket import get_connection_manager
 from app.api.schemas.websocket import WebSocketMessage
-from app.api.websocket_action_handler import WebSocketActionHandler
+from app.services.chat import ChatService
 from app.utils import jwt_token
-from app.utils.connection_manager import manager
+from app.utils.connection_manager import ConnectionManager
 
 router = APIRouter(tags=["websocket"])
 
 
 @router.websocket("/connection")
-async def websocket_connection(websocket: WebSocket):
+async def websocket_connection(
+    websocket: WebSocket,
+    chat_service: ChatService = Depends(get_chat_service),
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+):
     """Accept a WebSocket connection and registers it under the given user_id.
 
     Incoming JSON message should match the following structure:
 
         {
-            "action": "send" | "read",
-            "chat_id": "string (required for 'send' and 'read')",
-            "content": "string (required for 'send')",
+            "action": "create" | "read",
+            "chat_id": "string (required for 'create' and 'read')",
+            "content": "string (required for 'create')",
             "message_id": "string (optional, for idempotency)"
         }
 
     """
     token = websocket.query_params.get("token")
     if not token:
-        await websocket.close(code=1008)
+        print("no token!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        await websocket.close(code=403)
         return
 
     try:
         payload = jwt_token.verify(token)
-    except Exception:  # pylint: disable=broad-exception-caught
-        await websocket.close(code=1008)
+    except Exception:
+        print("Invalid token!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        await websocket.close(code=403)
         return
 
-    user_id = payload.get("sub")
-    if user_id is None:
-        await websocket.close(code=1008)
+    user = await chat_service.user_service.browse(payload.get("sub"))
+    if not user:
+        await websocket.close(code=403)
+        print("not user!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         return
 
-    await manager.connect(user_id, websocket)
-    action_handler = WebSocketActionHandler(websocket, manager, user_id)
+    await connection_manager.connect(str(user.id), websocket)
 
     try:
         while True:
             data = await websocket.receive_json()
             try:
                 WebSocketMessage.parse_obj(data)
-            except Exception as e:  # pylint: disable=broad-exception-caught
-                await websocket.send_json({"error": f"Invalid data: {str(e)}"})
+            except Exception:  # pylint: disable=broad-exception-caught
                 continue
 
-            await action_handler.process(data)
+            await chat_service._websocket_callback(user, data, connection_manager)
 
-    except WebSocketDisconnect:
-        manager.disconnect(user_id, websocket)
+    except WebSocketDisconnect as e:
+        print("WebSocketDisconnect!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", e)
+        connection_manager.disconnect(str(user.id), websocket)
