@@ -157,8 +157,6 @@ $(document).ready(function() {
         socket.onmessage = function (event) {
             const data = JSON.parse(event.data);
             if (currentChatId && data.chat_id === currentChatId) {
-                console.log("onmessage", data);
-                console.log("messages", messages);
                 if (messages.find(m => m.id === data.message_id)) {
                     updateMessage(data.message_id, data);
                 } else {
@@ -234,7 +232,6 @@ $(document).ready(function() {
         }
         const data = await response.json();
         if (data) {
-            console.log(data.result);
             return data.result;
         }
         return [];
@@ -381,7 +378,6 @@ $(document).ready(function() {
             }
             const data = await response.json();
             let html = "";
-            console.log(data);
             data.forEach(chat => {
                 // Для чатов, если пользователь уже является участником,
                 // показываем две кнопки: "Открыть" и "Выйти из чата".
@@ -434,8 +430,6 @@ $(document).ready(function() {
             // Обработчик для кнопок "Вступить"
             $("#chatsList").on("click", ".joinChat-btn", async function () {
                 const chatId = $(this).data("chatid");
-                console.log("joinChat", chatId);
-                const chatName = $(this).data("chatname");
                 await joinChat(chatId);
                 // Обновляем список чатов после вступления в чат
                 await loadGroupChats();
@@ -477,7 +471,6 @@ $(document).ready(function() {
             // Отображаем список пользователей кроме себя
             let html = "";
             data.forEach(user => {
-                console.log(user.id, currentUserId);
                 if (user.id === currentUserId) {
                     $("#userName").text(user.name);
                 } else {
