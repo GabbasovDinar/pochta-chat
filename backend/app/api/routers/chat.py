@@ -67,6 +67,7 @@ async def get_group_chats(
     user: Annotated[User, Depends(oauth2_authenticate)],
     chat_service: Annotated[ChatService, Depends(get_chat_service)],
 ):
+    """Get group chats."""
     try:
         return await chat_service.get_group_chats(str(user.id))
     except Exception as e:
@@ -88,9 +89,6 @@ async def create_chat(
         chat = await chat_service.action_create(
             user_ids=user_ids, chat_type=data.chat_type, name=data.name
         )
-        print("=============")
-        print(chat)
-        print("=============")
         return chat
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e

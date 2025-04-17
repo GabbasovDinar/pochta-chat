@@ -30,21 +30,18 @@ async def websocket_connection(
     """
     token = websocket.query_params.get("token")
     if not token:
-        print("no token!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         await websocket.close(code=403)
         return
 
     try:
         payload = jwt_token.verify(token)
     except Exception:
-        print("Invalid token!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         await websocket.close(code=403)
         return
 
     user = await chat_service.user_service.browse(payload.get("sub"))
     if not user:
         await websocket.close(code=403)
-        print("not user!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         return
 
     await connection_manager.connect(str(user.id), websocket)
@@ -59,6 +56,5 @@ async def websocket_connection(
 
             await chat_service._websocket_callback(user, data, connection_manager)
 
-    except WebSocketDisconnect as e:
-        print("WebSocketDisconnect!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", e)
+    except WebSocketDisconnect:
         connection_manager.disconnect(str(user.id), websocket)
